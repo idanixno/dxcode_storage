@@ -77,7 +77,9 @@ class DXCodeStorage {
         final storedData = '$salt:$iv:$encryptedData';
         await _secureStorage.write(key: key, value: storedData);
       } else {}
-    } catch (e) {}
+    } catch (e) {
+      return;
+    }
   }
 
   Future<String?> read(String key, String password) async {
