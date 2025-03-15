@@ -1,0 +1,54 @@
+PODS:
+  - device_info_plus (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - flutter_secure_storage (6.0.0):
+    - Flutter
+  - flutter_v2ray (0.0.1):
+    - Flutter
+  - IOSSecuritySuite (1.9.11)
+  - jailbreak_root_detection (1.0.1):
+    - Flutter
+    - IOSSecuritySuite (~> 1.9.10)
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
+  - flutter_v2ray (from `.symlinks/plugins/flutter_v2ray/ios`)
+  - jailbreak_root_detection (from `.symlinks/plugins/jailbreak_root_detection/ios`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+
+SPEC REPOS:
+  trunk:
+    - IOSSecuritySuite
+
+EXTERNAL SOURCES:
+  device_info_plus:
+    :path: ".symlinks/plugins/device_info_plus/ios"
+  Flutter:
+    :path: Flutter
+  flutter_secure_storage:
+    :path: ".symlinks/plugins/flutter_secure_storage/ios"
+  flutter_v2ray:
+    :path: ".symlinks/plugins/flutter_v2ray/ios"
+  jailbreak_root_detection:
+    :path: ".symlinks/plugins/jailbreak_root_detection/ios"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
+
+SPEC CHECKSUMS:
+  device_info_plus: bf2e3232933866d73fe290f2942f2156cdd10342
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
+  flutter_secure_storage: d33dac7ae2ea08509be337e775f6b59f1ff45f12
+  flutter_v2ray: 21ee520e013877941e2e67b3b48aed9c6870e8dc
+  IOSSecuritySuite: b51056d5411aee567153ca86ce7f6edfdc5d2654
+  jailbreak_root_detection: b95de80c3e51eec1fc7d0225784d2fc038fa95ed
+  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+
+PODFILE CHECKSUM: 819463e6a0290f5a72f145ba7cde16e8b6ef0796
+
+COCOAPODS: 1.15.2
