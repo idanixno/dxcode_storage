@@ -1,6 +1,6 @@
 name: dxcode_storage
 description: A DXCode package for securely storing sensitive data.
-version: 0.0.2
+version: 0.0.3
 # author: DXCode Team
 # homepage: https://github.com/DXCode/dx_code_secure_storage
 homepage: 

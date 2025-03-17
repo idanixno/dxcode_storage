@@ -23,7 +23,7 @@ class DXCodeStorage {
     var saltBytes = base64.decode(salt); // Salt در قالب base64 ذخیره می‌شود
 
     // تعداد تکرارهای زیاد برای امنیت بیشتر
-    var pbkdf2Iterations = 1000009; // تعداد تکرارها برای PBKDF2
+    var pbkdf2Iterations = 100000; // تعداد تکرارها برای PBKDF2
 
     var key = await _pbkdf2(password, saltBytes, pbkdf2Iterations);
     return encrypt.Key.fromBase16(key);
