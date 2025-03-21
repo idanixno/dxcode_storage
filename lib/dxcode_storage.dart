@@ -1,9 +1,9 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'dart:math';
+import 'package:flutter/foundation.dart'; // برای استفاده از compute
 
 class DXCodeStorage {
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -22,21 +22,20 @@ class DXCodeStorage {
   ) async {
     var saltBytes = base64.decode(salt); // Salt در قالب base64 ذخیره می‌شود
 
-    // تعداد تکرارهای زیاد برای امنیت بیشتر
-    var pbkdf2Iterations = 100000; // تعداد تکرارها برای PBKDF2
+    var pbkdf2Iterations = 100000;
 
-    var key = await _pbkdf2(password, saltBytes, pbkdf2Iterations);
+    var key = await compute(_pbkdf2, [password, saltBytes, pbkdf2Iterations]);
+
     return encrypt.Key.fromBase16(key);
   }
 
   // تابع PBKDF2 برای تبدیل به کلید
-  Future<String> _pbkdf2(
-    String password,
-    List<int> salt,
-    int iterations,
-  ) async {
-    var bytes = utf8.encode(password);
+  static String _pbkdf2(List<dynamic> params) {
+    String password = params[0];
+    List<int> salt = params[1];
+    int iterations = params[2];
 
+    var bytes = utf8.encode(password);
     var hmac = Hmac(sha256, Uint8List.fromList(bytes));
     var result = hmac.convert(salt);
 
@@ -78,7 +77,7 @@ class DXCodeStorage {
         await _secureStorage.write(key: key, value: storedData);
       } else {}
     } catch (e) {
-      return;
+      print('Error writing data: $e');
     }
   }
 
@@ -101,6 +100,7 @@ class DXCodeStorage {
       }
       return null;
     } catch (e) {
+      print('Error reading data: $e');
       return null;
     }
   }
