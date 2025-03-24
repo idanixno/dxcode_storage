@@ -1,6 +1,6 @@
 name: dxcode_storage
 description: A DXCode package for securely storing sensitive data.
-version: 0.0.4
+version: 0.0.5
 # author: DXCode Team
 # homepage: https://github.com/DXCode/dx_code_secure_storage
 homepage: 
@@ -15,6 +15,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   encrypt: ^5.0.3
   crypto: ^3.0.6
+  pointycastle: ^3.9.1
 
 dev_dependencies:
   flutter_test:

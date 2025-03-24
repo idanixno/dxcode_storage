@@ -3,7 +3,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'dart:math';
-import 'package:flutter/foundation.dart'; // برای استفاده از compute
+import 'package:flutter/foundation.dart';
+import 'package:pointycastle/export.dart'; // برای استفاده از compute
 
 class DXCodeStorage {
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -20,13 +21,12 @@ class DXCodeStorage {
     String password,
     String salt,
   ) async {
-    var saltBytes = base64.decode(salt); // Salt در قالب base64 ذخیره می‌شود
+    final saltBytes = base64.decode(salt);
+    final keyDerivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
+    keyDerivator.init(Pbkdf2Parameters(saltBytes, 100000, 32));
 
-    var pbkdf2Iterations = 100000;
-
-    var key = await compute(_pbkdf2, [password, saltBytes, pbkdf2Iterations]);
-
-    return encrypt.Key.fromBase16(key);
+    final keyBytes = keyDerivator.process(utf8.encode(password));
+    return encrypt.Key(Uint8List.fromList(keyBytes));
   }
 
   // تابع PBKDF2 برای تبدیل به کلید
@@ -49,7 +49,7 @@ class DXCodeStorage {
 
   // رمزگذاری داده‌ها با AES GCM
   Future<String> _encryptData(String plainText, encrypt.Key key) async {
-    final iv = encrypt.IV.fromLength(16); // IV تصادفی برای هر رمزگذاری
+    final iv = encrypt.IV.fromSecureRandom(16); // IV تصادفی برای هر رمزگذاری
     final encrypter = encrypt.Encrypter(
       encrypt.AES(key, mode: encrypt.AESMode.gcm),
     );
