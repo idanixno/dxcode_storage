@@ -1,97 +1,91 @@
 import 'dart:convert';
-import 'package:crypto/crypto.dart';
+import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:pointycastle/export.dart'; // برای استفاده از compute
+import 'package:pointycastle/export.dart';
+
+// کش در حافظه برای ذخیره کلیدهای تولید شده (کلید: "$password-$salt")
+final Map<String, encrypt.Key> _keyCache = {};
+
+/// تابع top-level برای اجرای PBKDF2 در isolate
+Future<Uint8List> _deriveKey(Map<String, dynamic> params) async {
+  final String password = params['password'];
+  final String salt = params['salt'];
+  final saltBytes = base64.decode(salt);
+  const int iterations = 100000; // حفظ تعداد تکرار برای امنیت بالا
+  final keyDerivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
+  keyDerivator.init(Pbkdf2Parameters(saltBytes, iterations, 32));
+  return keyDerivator.process(utf8.encode(password));
+}
 
 class DXCodeStorage {
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  // تابع برای تولید Salt تصادفی منحصر به فرد
+  // تولید Salt تصادفی 16 بایتی
   String _generateRandomSalt() {
     final random = Random.secure();
     final saltBytes = List<int>.generate(16, (_) => random.nextInt(256));
     return base64.encode(saltBytes);
   }
 
-  // تابع برای استفاده از PBKDF2 برای تولید کلید از رمز عبور و Salt
+  // تولید کلید با استفاده از compute و کش کردن کلیدها
   Future<encrypt.Key> _generateKeyFromPassword(
     String password,
     String salt,
   ) async {
-    final saltBytes = base64.decode(salt);
-    final keyDerivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
-    keyDerivator.init(Pbkdf2Parameters(saltBytes, 100000, 32));
-
-    final keyBytes = keyDerivator.process(utf8.encode(password));
-    return encrypt.Key(Uint8List.fromList(keyBytes));
-  }
-
-  // تابع PBKDF2 برای تبدیل به کلید
-  static String _pbkdf2(List<dynamic> params) {
-    String password = params[0];
-    List<int> salt = params[1];
-    int iterations = params[2];
-
-    var bytes = utf8.encode(password);
-    var hmac = Hmac(sha256, Uint8List.fromList(bytes));
-    var result = hmac.convert(salt);
-
-    // استفاده از تعداد زیادی تکرار در PBKDF2
-    for (int i = 0; i < iterations - 1; i++) {
-      result = hmac.convert(result.bytes);
+    final cacheKey = '$password-$salt';
+    if (_keyCache.containsKey(cacheKey)) {
+      return _keyCache[cacheKey]!;
     }
-
-    return result.toString();
+    final keyBytes = await compute(_deriveKey, {
+      'password': password,
+      'salt': salt,
+    });
+    final key = encrypt.Key(Uint8List.fromList(keyBytes));
+    _keyCache[cacheKey] = key;
+    return key;
   }
 
-  // رمزگذاری داده‌ها با AES GCM
+  // رمزگذاری داده‌ها با AES GCM با IV تصادفی
   Future<String> _encryptData(String plainText, encrypt.Key key) async {
-    final iv = encrypt.IV.fromSecureRandom(16); // IV تصادفی برای هر رمزگذاری
+    final iv = encrypt.IV.fromSecureRandom(16);
     final encrypter = encrypt.Encrypter(
       encrypt.AES(key, mode: encrypt.AESMode.gcm),
     );
-
     final encrypted = encrypter.encrypt(plainText, iv: iv);
-    final result = '${iv.base64}:${encrypted.base64}';
-    return result;
+    return '${iv.base64}:${encrypted.base64}';
   }
 
+  // نوشتن داده‌ها به صورت رمزنگاری‌شده با یک لایه امنیتی بالا
   Future<void> write(String key, String value, String password) async {
     try {
-      final salt = _generateRandomSalt(); // Salt تصادفی برای هر کاربر
+      final salt = _generateRandomSalt(); // تولید salt جدید برای هر رمزگذاری
       final encryptionKey = await _generateKeyFromPassword(password, salt);
-
       final encryptedValue = await _encryptData(value, encryptionKey);
-
-      // ساخت داده به فرمت 'salt:iv:encryptedData'
       final parts = encryptedValue.split(':');
       if (parts.length == 2) {
         final iv = parts[0];
         final encryptedData = parts[1];
-
-        // ذخیره داده‌ها به صورت 'salt:iv:encryptedData'
+        // داده به فرمت 'salt:iv:encryptedData'
         final storedData = '$salt:$iv:$encryptedData';
         await _secureStorage.write(key: key, value: storedData);
-      } else {}
+      }
     } catch (e) {
       print('Error writing data: $e');
     }
   }
 
+  // خواندن و رمزگشایی داده‌ها
   Future<String?> read(String key, String password) async {
     try {
       final encryptedValue = await _secureStorage.read(key: key);
       if (encryptedValue != null) {
-        // چک کردن و جدا کردن داده‌ها به فرمت 'salt:iv:encryptedData'
         final parts = encryptedValue.split(':');
         if (parts.length == 3) {
-          final salt = parts[0]; // Salt
-          final iv = parts[1]; // IV
-          final encryptedData = parts[2]; // داده رمزگذاری شده
-
+          final salt = parts[0];
+          final iv = parts[1];
+          final encryptedData = parts[2];
           final encryptionKey = await _generateKeyFromPassword(password, salt);
           return await _decryptData(encryptedData, encryptionKey, iv);
         } else {
@@ -105,21 +99,18 @@ class DXCodeStorage {
     }
   }
 
-  // تغییرات در `_decryptData` برای پردازش IV به طور جداگانه
+  // رمزگشایی داده‌ها با AES GCM
   Future<String> _decryptData(
     String encryptedText,
     encrypt.Key key,
     String ivBase64,
   ) async {
     final iv = encrypt.IV.fromBase64(ivBase64);
-
     final encrypter = encrypt.Encrypter(
       encrypt.AES(key, mode: encrypt.AESMode.gcm),
     );
-
     try {
-      final decrypted = encrypter.decrypt64(encryptedText, iv: iv);
-      return decrypted;
+      return encrypter.decrypt64(encryptedText, iv: iv);
     } catch (e) {
       throw Exception('InvalidCipherTextException: $e');
     }
