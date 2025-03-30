@@ -13,7 +13,7 @@ Future<Uint8List> _deriveKey(Map<String, dynamic> params) async {
   final String password = params['password'];
   final String salt = params['salt'];
   final saltBytes = base64.decode(salt);
-  const int iterations = 100000; // حفظ تعداد تکرار برای امنیت بالا
+  const int iterations = 10000; // حفظ تعداد تکرار برای امنیت بالا
   final keyDerivator = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
   keyDerivator.init(Pbkdf2Parameters(saltBytes, iterations, 32));
   return keyDerivator.process(utf8.encode(password));
@@ -58,7 +58,7 @@ class DXCodeStorage {
   }
 
   // نوشتن داده‌ها به صورت رمزنگاری‌شده با یک لایه امنیتی بالا
-  Future<void> write(String key, String value, String password) async {
+  Future<String?> write(String key, String value, String password) async {
     try {
       final salt = _generateRandomSalt(); // تولید salt جدید برای هر رمزگذاری
       final encryptionKey = await _generateKeyFromPassword(password, salt);
@@ -70,9 +70,12 @@ class DXCodeStorage {
         // داده به فرمت 'salt:iv:encryptedData'
         final storedData = '$salt:$iv:$encryptedData';
         await _secureStorage.write(key: key, value: storedData);
+        return storedData;
       }
+      return null;
     } catch (e) {
       print('Error writing data: $e');
+      return null;
     }
   }
 
