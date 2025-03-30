@@ -58,7 +58,7 @@ class DXCodeStorage {
   }
 
   // نوشتن داده‌ها به صورت رمزنگاری‌شده با یک لایه امنیتی بالا
-  Future<String?> write(String key, String value, String password) async {
+  Future<void> write(String key, String value, String password) async {
     try {
       final salt = _generateRandomSalt(); // تولید salt جدید برای هر رمزگذاری
       final encryptionKey = await _generateKeyFromPassword(password, salt);
@@ -70,12 +70,10 @@ class DXCodeStorage {
         // داده به فرمت 'salt:iv:encryptedData'
         final storedData = '$salt:$iv:$encryptedData';
         await _secureStorage.write(key: key, value: storedData);
-        return storedData;
       }
-      return null;
     } catch (e) {
-      print('Error writing data: $e');
-      return null;
+      debugPrint('Error writing data: $e');
+      debugPrint('Error writing data: $e');
     }
   }
 
@@ -97,7 +95,7 @@ class DXCodeStorage {
       }
       return null;
     } catch (e) {
-      print('Error reading data: $e');
+      debugPrint('Error reading data: $e');
       return null;
     }
   }
@@ -116,6 +114,35 @@ class DXCodeStorage {
       return encrypter.decrypt64(encryptedText, iv: iv);
     } catch (e) {
       throw Exception('InvalidCipherTextException: $e');
+    }
+  }
+}
+
+class DXCodeCryptoService {
+  final String keyString;
+
+  DXCodeCryptoService({required this.keyString});
+
+  String encryptData(String plainText) {
+    final encrypt.Key key = encrypt.Key.fromUtf8(keyString);
+    final encrypt.Encrypter encrypter = encrypt.Encrypter(
+      encrypt.AES(key, mode: encrypt.AESMode.cbc),
+    );
+    final encrypt.IV iv = encrypt.IV.fromUtf8(keyString.substring(0, 16));
+    return encrypter.encrypt(plainText, iv: iv).base64;
+  }
+
+  String? decryptData(String encryptedText) {
+    try {
+      final encrypt.Key key = encrypt.Key.fromUtf8(keyString);
+      final encrypt.Encrypter encrypter = encrypt.Encrypter(
+        encrypt.AES(key, mode: encrypt.AESMode.cbc),
+      );
+      final encrypt.IV iv = encrypt.IV.fromUtf8(keyString.substring(0, 16));
+      return encrypter.decrypt64(encryptedText, iv: iv);
+    } catch (e) {
+      debugPrint('Decryption error: $e');
+      return null;
     }
   }
 }
