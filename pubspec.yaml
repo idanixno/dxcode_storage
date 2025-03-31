@@ -1,12 +1,10 @@
 name: dxcode_storage
 description: A DXCode package for securely storing sensitive data.
-version: 0.0.8
-# author: DXCode Team
+version: 0.0.9
 # homepage: https://github.com/DXCode/dx_code_secure_storage
-homepage: 
 
 environment:
-  sdk: ^3.8.0-149.0.dev
+  sdk: ">=2.17.0 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
