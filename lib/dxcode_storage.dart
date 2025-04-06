@@ -73,7 +73,6 @@ class DXCodeStorage {
       }
     } catch (e) {
       debugPrint('Error writing data: $e');
-      debugPrint('Error writing data: $e');
     }
   }
 
@@ -114,6 +113,15 @@ class DXCodeStorage {
       return encrypter.decrypt64(encryptedText, iv: iv);
     } catch (e) {
       throw Exception('InvalidCipherTextException: $e');
+    }
+  }
+
+  Future<void> delete(String key) async {
+    try {
+      await _secureStorage.delete(key: key);
+      debugPrint('Data deleted successfully.');
+    } catch (e) {
+      debugPrint('Error deleting data: $e');
     }
   }
 }
